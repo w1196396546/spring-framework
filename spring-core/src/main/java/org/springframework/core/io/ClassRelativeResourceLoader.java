@@ -28,6 +28,11 @@ import org.springframework.util.StringUtils;
  * @see Class#getResource(String)
  * @see ClassPathResource#ClassPathResource(String, Class)
  */
+
+/**
+ * 具有从给定的class所在的路径下加载资源的功能
+ *
+ */
 public class ClassRelativeResourceLoader extends DefaultResourceLoader {
 
 	private final Class<?> clazz;

@@ -43,9 +43,13 @@ import org.springframework.lang.Nullable;
  * @see ResourceEntityResolver
  */
 public class BeansDtdResolver implements EntityResolver {
-
+	/**
+	 * dtd文件的后缀
+	 */
 	private static final String DTD_EXTENSION = ".dtd";
-
+	/**
+	 * spring bean DTD文件名
+	 */
 	private static final String DTD_NAME = "spring-beans";
 
 	private static final Log logger = LogFactory.getLog(BeansDtdResolver.class);
@@ -58,11 +62,14 @@ public class BeansDtdResolver implements EntityResolver {
 			logger.trace("Trying to resolve XML entity with public ID [" + publicId +
 					"] and system ID [" + systemId + "]");
 		}
-
+		//判断必须以dtd结尾
 		if (systemId != null && systemId.endsWith(DTD_EXTENSION)) {
+			//获得最后一个/的位置
 			int lastPathSeparator = systemId.lastIndexOf('/');
+			//获得spring-deans的位置
 			int dtdNameStart = systemId.indexOf(DTD_NAME, lastPathSeparator);
 			if (dtdNameStart != -1) {
+				//找到了
 				String dtdFile = DTD_NAME + DTD_EXTENSION;
 				if (logger.isTraceEnabled()) {
 					logger.trace("Trying to locate [" + dtdFile + "] in Spring jar on classpath");

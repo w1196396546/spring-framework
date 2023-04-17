@@ -54,6 +54,7 @@ public abstract class BeanFactoryUtils {
 
 	/**
 	 * Cache from name with factory bean prefix to stripped name without dereference.
+	 * 缓存 {@link #transformedBeanName(String)} 已经转换好的结果。
 	 * @since 5.1
 	 * @see BeanFactory#FACTORY_BEAN_PREFIX
 	 */
@@ -72,6 +73,10 @@ public abstract class BeanFactoryUtils {
 	}
 
 	/**
+	 *  * 去除 FactoryBean 的修饰符 &
+	 *  *
+	 *  * 如果 name 以 “&” 为前缀，那么会去掉该 "&" 。
+	 *  * 例如，name = "&studentService" ，则会是 name = "studentService"。
 	 * Return the actual bean name, stripping out the factory dereference
 	 * prefix (if any, also stripping repeated factory prefixes if found).
 	 * @param name the name of the bean
@@ -83,7 +88,10 @@ public abstract class BeanFactoryUtils {
 		if (!name.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {
 			return name;
 		}
-		return transformedBeanNameCache.computeIfAbsent(name, beanName -> {
+		//      1. 未存在，则进行计算执行，并将结果添加到缓存、
+		//      2. 已存在，则直接返回，无需计算。
+		// map集合的源码中是这么写的：mappingFunction.apply(key)，这个key其实就是传递的第一个参数，beanName对应的是key，所以也就是对应name
+		return transformedBeanNameCache.computeIfAbsent(name,/*这一段相当于Function中apply方法的执行体*/ beanName -> {
 			do {
 				beanName = beanName.substring(BeanFactory.FACTORY_BEAN_PREFIX.length());
 			}

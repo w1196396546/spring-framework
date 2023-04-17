@@ -78,6 +78,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
 
 	/** Cache of singleton factories: bean name to ObjectFactory. */
+	/**
+	 * 在Spring中，singletonFactories是一个ConcurrentHashMap<String, ObjectFactory<?>>类型的变量，
+	 * 用于存储BeanFactory中由FactoryBean创建的Bean的ObjectFactory实例。
+	 */
 	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
 
 	/** Cache of early singleton objects: bean name to bean instance. */
@@ -87,6 +91,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private final Set<String> registeredSingletons = new LinkedHashSet<>(256);
 
 	/** Names of beans that are currently in creation. */
+//	正在创建中的单例 Bean 的名字的集合
 	private final Set<String> singletonsCurrentlyInCreation =
 			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
@@ -175,24 +180,46 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param beanName the name of the bean to look for
 	 * @param allowEarlyReference whether early references should be created or not
 	 * @return the registered singleton object, or {@code null} if none found
+	 *
+	 * 这段代码是 Spring 容器中获取单例 Bean 的核心方法，其实现逻辑相对较为复杂。简单来说，当 Spring 容器启动时，会将所有的单例 Bean 全部预先实例化，并缓存在 singletonObjects 中，以供后续使用。当 Spring 容器需要获取单例 Bean 时，会先通过 getSingleton 方法检查其是否已经被实例化，如果已经被实例化，就直接返回其实例对象；如果尚未被实例化，就会调用 createBean 方法进行实例化。
+	 *
+	 * 当 getSingleton 方法检查到 Bean 正在创建过程中时，会进一步检查 earlySingletonObjects 中是否存在该 Bean 对应的实例，如果存在，就返回该实例，否则会尝试通过 singletonFactories 获取该 Bean 的 ObjectFactory，再通过调用 getObject() 方法获取该 Bean 对应的实例。获取到实例后，会将其保存到 earlySingletonObjects 中，并从 singletonFactories 中删除，最后再将实例保存到 singletonObjects 中并返回。
+	 *
+	 * 需要注意的是，getSingleton 方法是被 Spring 容器在多线程环境下并发访问的，因此其中的操作需要考虑线程安全。
+	 *
+	 *
+	 * allowEarlyReference 参数是在获取单例对象时用来控制是否允许提前暴露单例对象的。如果 allowEarlyReference 为 true，那么 Spring 可能会提前暴露一个尚未完全初始化的单例对象，以便其它对象在该单例对象还未完全初始化时就能够引用它。
+	 *
+	 * 通常情况下，如果一个单例对象正在被创建（例如在创建 A 对象时需要先创建 B 对象，而在创建 B 对象时又需要先创建 A 对象，这就是典型的循环依赖问题），在创建 A 对象时 Spring 会提前暴露一个尚未完全初始化的 B 对象实例，以便在创建 B 对象时能够引用到它。这就是允许提前暴露单例对象的场景。
+	 *
+	 * 不过如果调用方在获取单例对象时不允许提前暴露单例对象（即 allowEarlyReference 为 false），那么 Spring 就不会提前暴露该单例对象，而是等待该单例对象完全初始化之后再返回给调用方。
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		// Quick check for existing instance without full singleton lock
 		Object singletonObject = this.singletonObjects.get(beanName);
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+			//earlySingletonObjects,存放正在创建当中的bean，这里是检测到singletonObjects没有当前的bean对象，并且这个检测到这个bean正在创建过程当中
+			//从正在创建的bean中得到当前的bean实例
 			singletonObject = this.earlySingletonObjects.get(beanName);
+			//实例可以提前暴漏
 			if (singletonObject == null && allowEarlyReference) {
+				// 二次检查 singletonObjects，确保没有其他线程已经初始化该 bean
 				synchronized (this.singletonObjects) {
 					// Consistent creation of early reference within full singleton lock
 					singletonObject = this.singletonObjects.get(beanName);
 					if (singletonObject == null) {
+						// 尝试从 earlySingletonObjects 中获取 bean 的实例
 						singletonObject = this.earlySingletonObjects.get(beanName);
 						if (singletonObject == null) {
+						//从singletonFactories中获取由FactoryBean创建的bean的BeanFactory
 							ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 							if (singletonFactory != null) {
+								//得到实例
 								singletonObject = singletonFactory.getObject();
+								//加入到正在创建的容器中
 								this.earlySingletonObjects.put(beanName, singletonObject);
+								//从BeanFactory中删除
 								this.singletonFactories.remove(beanName);
 							}
 						}
@@ -340,6 +367,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * (within the entire factory).
 	 * @param beanName the name of the bean
 	 */
+	//检测是否是创建中的实例
 	public boolean isSingletonCurrentlyInCreation(String beanName) {
 		return this.singletonsCurrentlyInCreation.contains(beanName);
 	}

@@ -67,6 +67,7 @@ public class ResourceEntityResolver extends DelegatingEntityResolver {
 	 */
 	public ResourceEntityResolver(ResourceLoader resourceLoader) {
 		super(resourceLoader.getClassLoader());
+		System.out.println("resourceLoader.getClassLoader()-resourceEntityResolver构造方法："+resourceLoader.getClassLoader());
 		this.resourceLoader = resourceLoader;
 	}
 
@@ -75,19 +76,26 @@ public class ResourceEntityResolver extends DelegatingEntityResolver {
 	@Nullable
 	public InputSource resolveEntity(@Nullable String publicId, @Nullable String systemId)
 			throws SAXException, IOException {
-
+// 调用父类的方法，进行解析
 		InputSource source = super.resolveEntity(publicId, systemId);
-
+		System.out.println("source"+source);
+		// 解析失败，resourceLoader 进行解析
 		if (source == null && systemId != null) {
+			// 获得 resourcePath ，即 Resource 资源地址
 			String resourcePath = null;
 			try {
-				String decodedSystemId = URLDecoder.decode(systemId, StandardCharsets.UTF_8);
-				String givenUrl = ResourceUtils.toURL(decodedSystemId).toString();
+				String decodedSystemId = URLDecoder.decode(systemId, StandardCharsets.UTF_8);// 使用 UTF-8 ，解码 systemId
+				System.out.println("decodedSystemId"+decodedSystemId);
+				String givenUrl = ResourceUtils.toURL(decodedSystemId).toString();// 转换成 URL 字符串
+				System.out.println("givenUrl"+givenUrl);
+				// 解析文件资源的相对路径（相对于系统根路径）
 				String systemRootUrl = new File("").toURI().toURL().toString();
+				System.out.println("systemRootUrl"+systemRootUrl);
 				// Try relative to resource base if currently in system root.
 				if (givenUrl.startsWith(systemRootUrl)) {
 					resourcePath = givenUrl.substring(systemRootUrl.length());
 				}
+				System.out.println("resourcePath"+resourcePath);
 			}
 			catch (Exception ex) {
 				// Typically a MalformedURLException or AccessControlException.
@@ -101,8 +109,11 @@ public class ResourceEntityResolver extends DelegatingEntityResolver {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Trying to locate XML entity [" + systemId + "] as resource [" + resourcePath + "]");
 				}
+				//获得resource资源
 				Resource resource = this.resourceLoader.getResource(resourcePath);
+				//创建InputResource对象
 				source = new InputSource(resource.getInputStream());
+				//设置两个值
 				source.setPublicId(publicId);
 				source.setSystemId(systemId);
 				if (logger.isDebugEnabled()) {

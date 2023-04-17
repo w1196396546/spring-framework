@@ -17,6 +17,9 @@
 package org.springframework.context.support;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.core.io.ClassPathResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,9 +28,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Beams
  */
 class ApplicationContextLifecycleTests {
-
+	@Test
+	void test(){
+		ClassPathResource resource = new ClassPathResource("test.xml"); // <1>
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory(); // <2>
+		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory); // <3>
+		reader.loadBeanDefinitions(resource); // <4>
+	}
 	@Test
 	void beansStart() {
+		//通过上下文，加载配置文件
 		AbstractApplicationContext context = new ClassPathXmlApplicationContext("lifecycleTests.xml", getClass());
 		context.start();
 		LifecycleTestBean bean1 = (LifecycleTestBean) context.getBean("bean1");

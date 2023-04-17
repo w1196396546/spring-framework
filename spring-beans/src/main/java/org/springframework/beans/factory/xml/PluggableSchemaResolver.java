@@ -68,12 +68,14 @@ public class PluggableSchemaResolver implements EntityResolver {
 
 	@Nullable
 	private final ClassLoader classLoader;
-
+	/**
+	 * schema文件地址
+	 */
 	private final String schemaMappingsLocation;
 
 	/** Stores the mapping of schema URL &rarr; local schema path. */
 	@Nullable
-	private volatile Map<String, String> schemaMappings;
+	private volatile Map<String, String> schemaMappings;// namespaceURI 与 Schema 文件地址的映射集合
 
 
 	/**
@@ -111,16 +113,21 @@ public class PluggableSchemaResolver implements EntityResolver {
 			logger.trace("Trying to resolve XML entity with public id [" + publicId +
 					"] and system id [" + systemId + "]");
 		}
-
+		System.out.println("publicId"+publicId);
+		System.out.println("systemId"+systemId);
 		if (systemId != null) {
 			String resourceLocation = getSchemaMappings().get(systemId);
+			System.out.println("resourceLocation"+resourceLocation);
 			if (resourceLocation == null && systemId.startsWith("https:")) {
 				// Retrieve canonical http schema mapping even for https declaration
 				resourceLocation = getSchemaMappings().get("http:" + systemId.substring(6));
 			}
 			if (resourceLocation != null) {
+				//创建classpathresource
 				Resource resource = new ClassPathResource(resourceLocation, this.classLoader);
+				System.out.println("resource"+resource);
 				try {
+					//创建inputsource对象，并设置publicId,systemId
 					InputSource source = new InputSource(resource.getInputStream());
 					source.setPublicId(publicId);
 					source.setSystemId(systemId);
@@ -146,19 +153,26 @@ public class PluggableSchemaResolver implements EntityResolver {
 	 */
 	private Map<String, String> getSchemaMappings() {
 		Map<String, String> schemaMappings = this.schemaMappings;
+		System.out.println("schemaMappings"+schemaMappings);
+		// 双重检查锁，实现 schemaMappings 单例
 		if (schemaMappings == null) {
 			synchronized (this) {
 				schemaMappings = this.schemaMappings;
+				System.out.println("schemaMappings"+schemaMappings);
 				if (schemaMappings == null) {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Loading schema mappings from [" + this.schemaMappingsLocation + "]");
 					}
 					try {
+						System.out.println("this.schemaMappingsLocation"+this.schemaMappingsLocation);
+						System.out.println("this.classLoader"+this.classLoader);
+						// 以 Properties 的方式，读取 schemaMappingsLocation
 						Properties mappings =
 								PropertiesLoaderUtils.loadAllProperties(this.schemaMappingsLocation, this.classLoader);
 						if (logger.isTraceEnabled()) {
 							logger.trace("Loaded schema mappings: " + mappings);
 						}
+						// 将 mappings 初始化到 schemaMappings 中
 						schemaMappings = new ConcurrentHashMap<>(mappings.size());
 						CollectionUtils.mergePropertiesIntoMap(mappings, schemaMappings);
 						this.schemaMappings = schemaMappings;
@@ -170,6 +184,7 @@ public class PluggableSchemaResolver implements EntityResolver {
 				}
 			}
 		}
+		System.out.println("schemaMappings"+schemaMappings);
 		return schemaMappings;
 	}
 

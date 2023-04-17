@@ -49,12 +49,20 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	/** Map from alias to canonical name. */
 	private final Map<String, String> aliasMap = new ConcurrentHashMap<>(16);
 
-
+	/**
+	 * 注册 alias 和 beanName 的映射
+	 * 注册别名跟beanName的映射关系
+	 * @param name the canonical name
+	 * @param alias the alias to be registered
+	 */
 	@Override
 	public void registerAlias(String name, String alias) {
+		//校验
 		Assert.hasText(name, "'name' must not be empty");
 		Assert.hasText(alias, "'alias' must not be empty");
+		//因为可能存在多线程访问，所以加锁
 		synchronized (this.aliasMap) {
+			//如果别名跟beanName一样，就删除别名，因为别名beanName就可以直接指向bean
 			if (alias.equals(name)) {
 				this.aliasMap.remove(alias);
 				if (logger.isDebugEnabled()) {
@@ -62,12 +70,16 @@ public class SimpleAliasRegistry implements AliasRegistry {
 				}
 			}
 			else {
+				//获取alias已注册的beanName
 				String registeredName = this.aliasMap.get(alias);
+				//已存在
 				if (registeredName != null) {
+					//相同则return，无需重复注册
 					if (registeredName.equals(name)) {
 						// An existing alias - no need to re-register
 						return;
 					}
+					// 不允许覆盖，则抛出 IllegalStateException 异常
 					if (!allowAliasOverriding()) {
 						throw new IllegalStateException("Cannot define alias '" + alias + "' for name '" +
 								name + "': It is already registered for name '" + registeredName + "'.");
@@ -77,7 +89,10 @@ public class SimpleAliasRegistry implements AliasRegistry {
 								registeredName + "' with new target name '" + name + "'");
 					}
 				}
+				// 校验，是否存在循环指向
+				//在最后，调用了 #checkForAliasCircle() 来对别名进行了循环检测
 				checkForAliasCircle(name, alias);
+				// 注册 alias
 				this.aliasMap.put(alias, name);
 				if (logger.isTraceEnabled()) {
 					logger.trace("Alias definition '" + alias + "' registered for name '" + name + "'");
@@ -101,6 +116,8 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	 * @since 4.2.1
 	 */
 	public boolean hasAlias(String name, String alias) {
+		// 这里的name其实是要注册的alias
+		// 而这里的alias其实是 `name` 对应的beanName
 		String registeredName = this.aliasMap.get(alias);
 		return ObjectUtils.nullSafeEquals(registeredName, name) ||
 				(registeredName != null && hasAlias(name, registeredName));
@@ -194,7 +211,31 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	 * @see #registerAlias
 	 * @see #hasAlias
 	 */
+	/**
+	 * 根据判断
+	 * 1、只要registedName等于name的话,就会返回true
+	 * 2、或者递归寻找间接循环
+	 * 举个例子:
+	 *
+	 * 直接循环:
+	 * 首先有name是A的别名是C,表示为A->C.
+	 * 这个时候如果再有name是C的别名是A的时候,表示为 C->A,就是出现直接依赖.
+	 * 因为name是C,别名是A的时候,方法checkForAliasCircle的参数是name=C、alias=A;
+	 * 那么hasAlias的参数就是name=A、alias=C
+	 * 则从aliasMap中得到registeredName = A,则name=registeredName,返回了true,抛出异常.
+	 * 间接循环
+	 * 有name=A、alias=B,name=B、alias=C,则aliasMap存储的两个键值对是(B,A)、(C,B)
+	 * 当这个时候又有一个bean的name=C,alias=A的时候,方法checkForAliasCircle的参数是name=C,alias=A;
+	 * 那么hasAlias的参数就是name=A、alias=C;
+	 * 则从aliasMap中得到registeredName = B,此时name!=registeredName,继续递归调用hasAlias,参数是name=A,alias=registeredName=B;
+	 * 则从aliasMap中得到registeredName = A,则name=registeredName=A,返回true抛出了异常.
+	 * @param name
+	 * @param alias
+	 */
 	protected void checkForAliasCircle(String name, String alias) {
+		// 当这里返回true的时候,说明有循环依赖
+		// 大家注意一点:这里传入的值是alias、name
+		// 进入到这个方法的时候,你会发现他俩的参数名称是反过来的一定要注意
 		if (hasAlias(alias, name)) {
 			throw new IllegalStateException("Cannot register alias '" + alias +
 					"' for name '" + name + "': Circular reference - '" +
@@ -211,6 +252,7 @@ public class SimpleAliasRegistry implements AliasRegistry {
 		String canonicalName = name;
 		// Handle aliasing...
 		String resolvedName;
+		// 循环，从 aliasMap 中，获取到最终的 beanName，aliasMap这个在初始化资源加载的时候就已经存进去了
 		do {
 			resolvedName = this.aliasMap.get(canonicalName);
 			if (resolvedName != null) {

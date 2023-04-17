@@ -16,9 +16,13 @@
 
 package org.springframework.beans.factory.xml;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ProtocolResolver;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.xml.sax.InputSource;
 
 import org.springframework.beans.factory.BeanDefinitionStoreException;
@@ -101,12 +105,20 @@ public class XmlBeanDefinitionReaderTests {
 
 	@Test
 	public void withFreshInputStream() {
+		//相当于一个bean存储的列表
 		SimpleBeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
+		//得到xml的源
 		Resource resource = new ClassPathResource("test.xml", getClass());
+		//通过XmlBeanDefinitionReader该类，扫描xml文件中的bean标签，将其注册到bean列表中
 		new XmlBeanDefinitionReader(registry).loadBeanDefinitions(resource);
 		testBeanDefinitions(registry);
 	}
-
+	@Test
+	public void testResourcePatternResolver() throws IOException {
+		ResourcePatternResolver pr=new PathMatchingResourcePatternResolver(this.getClass().getClassLoader());
+		Resource[] resources = pr.getResources("\\ideaProject\\springboot\\spring-framework-5.3.10\\spring-beans\\src\\test\\java\\org\\springframework\\beans\\factory\\xml");
+		System.out.println(resources.length);
+	}
 	private void testBeanDefinitions(BeanDefinitionRegistry registry) {
 		assertThat(registry.getBeanDefinitionCount()).isEqualTo(24);
 		assertThat(registry.getBeanDefinitionNames()).hasSize(24);

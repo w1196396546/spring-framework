@@ -92,6 +92,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
 		this.absolutePath = pathToUse;
 		this.classLoader = (classLoader != null ? classLoader : ClassUtils.getDefaultClassLoader());
 		this.clazz = null;
+		System.out.println("path:"+path);
 	}
 
 	/**

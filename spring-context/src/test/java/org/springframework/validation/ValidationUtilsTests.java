@@ -18,8 +18,13 @@ package org.springframework.validation;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.beans.testfixture.beans.TestBean;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.Nullable;
+
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -33,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  * @since 08.10.2004
  */
 public class ValidationUtilsTests {
-
 	@Test
 	public void testInvokeValidatorWithNullValidator() throws Exception {
 		TestBean tb = new TestBean();

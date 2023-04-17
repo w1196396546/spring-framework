@@ -49,6 +49,12 @@ import org.springframework.lang.Nullable;
  * @see ByteArrayResource
  * @see InputStreamResource
  */
+
+/**
+ * spring统一资源接口
+ * 为 Spring 框架所有资源的抽象和访问接口，它继承 org.springframework.core.io.InputStreamSource接口。
+ * 作为所有资源的统一抽象，Resource 定义了一些通用的方法，由子类 AbstractResource 提供统一的默认实现。
+ */
 public interface Resource extends InputStreamSource {
 
 	/**
@@ -56,6 +62,10 @@ public interface Resource extends InputStreamSource {
 	 * <p>This method performs a definitive existence check, whereas the
 	 * existence of a {@code Resource} handle only guarantees a valid
 	 * descriptor handle.
+	 */
+	/**
+	 * 资源是否存在
+	 * @return
 	 */
 	boolean exists();
 
@@ -70,6 +80,10 @@ public interface Resource extends InputStreamSource {
 	 * @see #getInputStream()
 	 * @see #exists()
 	 */
+	/**
+	 * 资源是否可读
+	 * @return
+	 */
 	default boolean isReadable() {
 		return exists();
 	}
@@ -79,6 +93,9 @@ public interface Resource extends InputStreamSource {
 	 * If {@code true}, the InputStream cannot be read multiple times,
 	 * and must be read and closed to avoid resource leaks.
 	 * <p>Will be {@code false} for typical resource descriptors.
+	 */
+	/**
+	 * 资源所代表的句柄是否被一个 stream 打开了
 	 */
 	default boolean isOpen() {
 		return false;
@@ -101,6 +118,9 @@ public interface Resource extends InputStreamSource {
 	 * @throws IOException if the resource cannot be resolved as URL,
 	 * i.e. if the resource is not available as a descriptor
 	 */
+	/**
+	 * 返回资源的 URL 的句柄
+	 */
 	URL getURL() throws IOException;
 
 	/**
@@ -108,6 +128,9 @@ public interface Resource extends InputStreamSource {
 	 * @throws IOException if the resource cannot be resolved as URI,
 	 * i.e. if the resource is not available as a descriptor
 	 * @since 2.5
+	 */
+	/**
+	 * 返回资源的 URI 的句柄
 	 */
 	URI getURI() throws IOException;
 
@@ -117,6 +140,9 @@ public interface Resource extends InputStreamSource {
 	 * absolute file path, i.e. if the resource is not available in a file system
 	 * @throws IOException in case of general resolution/reading failures
 	 * @see #getInputStream()
+	 */
+	/**
+	 * 返回资源的 File 的句柄
 	 */
 	File getFile() throws IOException;
 
@@ -130,6 +156,9 @@ public interface Resource extends InputStreamSource {
 	 * @throws IOException if the content channel could not be opened
 	 * @since 5.0
 	 * @see #getInputStream()
+	 */
+	/**
+	 * 返回 ReadableByteChannel
 	 */
 	default ReadableByteChannel readableChannel() throws IOException {
 		return Channels.newChannel(getInputStream());

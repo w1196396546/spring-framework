@@ -58,11 +58,19 @@ public class DelegatingEntityResolver implements EntityResolver {
 	 * @param classLoader the ClassLoader to use for loading
 	 * (can be {@code null} to use the default ClassLoader)
 	 */
+	/**
+	 * 默认的方法
+	 * @param classLoader
+	 */
 	public DelegatingEntityResolver(@Nullable ClassLoader classLoader) {
+		//实现 EntityResolver 接口，Spring Bean dtd 解码器，用来从 classpath 或者 jar 文件中加载 dtd 。
 		this.dtdResolver = new BeansDtdResolver();
+		//实现 EntityResolver 接口，读取 classpath 下的所有 "META-INF/spring.schemas" 成一个 namespaceURI 与 Schema 文件地址的 map 。
 		this.schemaResolver = new PluggableSchemaResolver(classLoader);
 	}
-
+	/**
+	 * 自定义方法
+	 */
 	/**
 	 * Create a new DelegatingEntityResolver that delegates to
 	 * the given {@link EntityResolver EntityResolvers}.
